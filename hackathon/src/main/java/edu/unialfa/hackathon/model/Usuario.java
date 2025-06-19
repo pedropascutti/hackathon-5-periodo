@@ -2,6 +2,7 @@ package edu.unialfa.hackathon.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.ToString;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -21,6 +22,7 @@ public class Usuario implements UserDetails {
 
     @ManyToOne
     @JoinColumn(name = "id_tipo_usuario")
+    @ToString.Exclude
     private TipoUsuario tipoUsuario;
 
     private String nome;

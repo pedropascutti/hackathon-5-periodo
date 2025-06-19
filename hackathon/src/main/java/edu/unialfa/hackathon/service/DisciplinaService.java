@@ -1,7 +1,11 @@
 package edu.unialfa.hackathon.service;
 
 import edu.unialfa.hackathon.model.Disciplina;
+import edu.unialfa.hackathon.model.Professor;
+import edu.unialfa.hackathon.model.Turma;
 import edu.unialfa.hackathon.repository.DisciplinaRepository;
+import edu.unialfa.hackathon.repository.ProfessorRepository;
+import edu.unialfa.hackathon.repository.TurmaRepository;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -13,6 +17,8 @@ import java.util.List;
 public class DisciplinaService {
 
     private final DisciplinaRepository disciplinaRepository;
+    private final TurmaRepository turmaRepository;
+    private final ProfessorRepository professorRepository;
 
     public List<Disciplina> listarTodas() {
         return disciplinaRepository.findAll();
@@ -24,6 +30,10 @@ public class DisciplinaService {
 
     @Transactional
     public void salvar(Disciplina disciplina) {
+        Turma turma = turmaRepository.findById(disciplina.getTurma().getId()).orElseThrow();
+        Professor professor = professorRepository.findById(disciplina.getProfessor().getId()).orElseThrow();
+        disciplina.setTurma(turma);
+        disciplina.setProfessor(professor);
         disciplinaRepository.save(disciplina);
     }
 
