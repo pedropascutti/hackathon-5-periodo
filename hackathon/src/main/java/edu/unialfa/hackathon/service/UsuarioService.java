@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -16,6 +17,7 @@ import java.util.List;
 public class UsuarioService implements UserDetailsService {
 
     private final UsuarioRepository usuarioRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
@@ -30,10 +32,28 @@ public class UsuarioService implements UserDetailsService {
 
     @Transactional
     public void salvar(Usuario usuario) {
+        if (usuario.getId() != null) {
+            Usuario original = usuarioRepository.findById(usuario.getId())
+                    .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+
+            if (usuario.getSenha() == null || usuario.getSenha().isBlank()) {
+                usuario.setSenha(original.getSenha());
+            } else {
+                usuario.setSenha(passwordEncoder.encode(usuario.getSenha()));
+            }
+
+        } else {
+            if (usuario.getSenha() == null || usuario.getSenha().isBlank()) {
+                throw new IllegalArgumentException("Senha é obrigatória no cadastro.");
+            }
+
+            usuario.setSenha(passwordEncoder.encode(usuario.getSenha()));
+        }
+
         usuarioRepository.save(usuario);
     }
 
-    public List<Usuario> listararTodos() {
+    public List<Usuario> listarTodos() {
         return usuarioRepository.findAll();
     }
 
