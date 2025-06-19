@@ -23,7 +23,7 @@ public class TurmaController {
     @GetMapping("/nova")
     public String novaTurmaForm(Model model) {
         model.addAttribute("turma", new Turma());
-        return "turmas/form";
+        return "turmas/formulario";
     }
 
     @PostMapping("/salvar")
@@ -35,7 +35,7 @@ public class TurmaController {
     @GetMapping("/editar/{id}")
     public String editar(@PathVariable Long id, Model model) {
         model.addAttribute("turma", turmaService.buscarPorId(id));
-        return "turmas/form";
+        return "turmas/formulario";
     }
 
     @GetMapping("/deletar/{id}")

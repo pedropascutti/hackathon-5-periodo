@@ -26,40 +26,22 @@ public class SecurityConfig {
                 .headers(header -> header.frameOptions(config -> config.sameOrigin()))
                 .httpBasic(Customizer.withDefaults())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/images/**",
-                                "/css/**", "/error/**").permitAll()
-                        .requestMatchers("/","/login").permitAll()
+                        .requestMatchers("/css/**", "/js/**", "/images/**", "/login").permitAll()
                         .requestMatchers("/usuarios/**").hasRole("ADMIN")
                         .requestMatchers("/api/**").hasAnyRole("ADMIN", "API")
                         .anyRequest().authenticated()
-                ).formLogin(login -> login
+                )
+                .formLogin(login -> login
                         .loginPage("/login")
-                        .defaultSuccessUrl("/",true))
+                        .defaultSuccessUrl("/", true)
+                        .permitAll()
+                )
                 .logout(logout -> logout
                         .logoutUrl("/logout")
-                        .logoutSuccessUrl("/login"))
+                        .logoutSuccessUrl("/login")
+                )
                 .build();
     }
-    /*
-    @Bean
-    public UserDetailsService userDetailsService() {
-        UserDetails admin =
-                User.withDefaultPasswordEncoder()
-                        .username("admin")
-                        .password("admin")
-                        .roles("ADMIN")
-                        .build();
-
-        UserDetails user =
-                User.withDefaultPasswordEncoder()
-                        .username("user")
-                        .password(new BCryptPasswordEncoder().encode("user"))
-                        .roles("USER")
-                        .build();
-
-        return new InMemoryUserDetailsManager(user, admin);
-    }
-    */
     @Bean
     public PasswordEncoder passwordEncoder(){
         return new BCryptPasswordEncoder();

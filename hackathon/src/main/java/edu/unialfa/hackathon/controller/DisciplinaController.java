@@ -2,6 +2,7 @@ package edu.unialfa.hackathon.controller;
 
 import edu.unialfa.hackathon.model.Disciplina;
 import edu.unialfa.hackathon.service.DisciplinaService;
+import edu.unialfa.hackathon.service.ProfessorService;
 import edu.unialfa.hackathon.service.TurmaService;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Controller;
@@ -15,7 +16,7 @@ public class DisciplinaController {
 
     private final DisciplinaService disciplinaService;
     private final TurmaService turmaService;
-    //private final ProfessorService professorService;
+    private final ProfessorService professorService;
 
     @GetMapping
     public String listar(Model model) {
@@ -27,8 +28,8 @@ public class DisciplinaController {
     public String novaDisciplinaForm(Model model) {
         model.addAttribute("disciplina", new Disciplina());
         model.addAttribute("turmas", turmaService.listarTodas());
-        //model.addAttribute("professores", professorService.listarTodos()); // você vai precisar deste service
-        return "disciplinas/form";
+        model.addAttribute("professores", professorService.listarTodos());
+        return "disciplinas/formulario";
     }
 
     @PostMapping("/salvar")
@@ -41,8 +42,8 @@ public class DisciplinaController {
     public String editar(@PathVariable Long id, Model model) {
         model.addAttribute("disciplina", disciplinaService.buscarPorId(id));
         model.addAttribute("turmas", turmaService.listarTodas());
-        //model.addAttribute("professores", professorService.listarTodos());
-        return "disciplinas/form";
+        model.addAttribute("professores", professorService.listarTodos());
+        return "disciplinas/formulario";
     }
 
     @GetMapping("/deletar/{id}")
