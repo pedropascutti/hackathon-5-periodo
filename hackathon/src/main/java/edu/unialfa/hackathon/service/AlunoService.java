@@ -1,7 +1,7 @@
 package edu.unialfa.hackathon.service;
 
-import edu.unialfa.hackathon.model.Professor;
-import edu.unialfa.hackathon.repository.ProfessorRepository;
+import edu.unialfa.hackathon.model.Aluno;
+import edu.unialfa.hackathon.repository.AlunoRepository;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -10,19 +10,19 @@ import java.util.List;
 
 @Service
 @AllArgsConstructor
-public class ProfessorService {
-    private final ProfessorRepository repository;
+public class AlunoService {
+    private final AlunoRepository repository;
 
     @Transactional
-    public void salvar(Professor professor) {
-        repository.save(professor);
+    public void salvar(Aluno aluno) {
+        repository.save(aluno);
     }
 
-    public List<Professor> listarTodos() {
+    public List<Aluno> listarTodos() {
         return repository.findAll();
     }
 
-    public Professor buscarPorId(Long id) {
+    public Aluno buscarPorId(Long id) {
         return repository.findById(id).get();
     }
 
