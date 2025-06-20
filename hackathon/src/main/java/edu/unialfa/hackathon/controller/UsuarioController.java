@@ -19,14 +19,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @AllArgsConstructor
 @RequestMapping("usuarios")
 public class UsuarioController {
-    private final UsuarioService service;
+    private final UsuarioService usuarioService;
     private final TipoUsuarioService tipoUsuarioService;
     private final ProfessorService professorService;
     private final AlunoService alunoService;
 
     @GetMapping
     public String listar(Usuario usuario, Model model) {
-        model.addAttribute("usuarios", service.listarTodos());
+        model.addAttribute("usuarios", usuarioService.listarTodos());
 
         return "usuarios/lista";
     }
@@ -42,7 +42,7 @@ public class UsuarioController {
     @PostMapping
     public String salvar(Usuario usuario, Model model) {
         try {
-            service.salvar(usuario);
+            usuarioService.salvar(usuario);
 
             Long tipoId = usuario.getTipoUsuario().getId();
 
@@ -84,7 +84,7 @@ public class UsuarioController {
 
     @GetMapping("editar/{id}")
     public String atualizar(@PathVariable Long id, Model model) {
-        Usuario usuario = service.buscarPorId(id);
+        Usuario usuario = usuarioService.buscarPorId(id);
         model.addAttribute("usuario", usuario);
         model.addAttribute("tipos", tipoUsuarioService.listarTodos());
 
@@ -101,7 +101,7 @@ public class UsuarioController {
             alunoService.deletarPorUsuarioId(id);
         }
 
-        service.deletarPorId(id);
+        usuarioService.deletarPorId(id);
 
         return "redirect:/usuarios";
     }

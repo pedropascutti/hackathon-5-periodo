@@ -21,10 +21,6 @@ public class Prova {
     @JoinColumn(name = "id_disciplina")
     private Disciplina disciplina;
 
-    @ManyToOne
-    @JoinColumn(name = "id_professor")
-    private Professor professor;
-
-    @OneToOne(mappedBy = "prova", cascade = CascadeType.ALL)
-    private Gabarito gabarito;
+    @OneToMany(mappedBy = "prova")
+    private List<Questao> questoes = new ArrayList<>();
 }
