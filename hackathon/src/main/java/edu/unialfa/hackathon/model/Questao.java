@@ -18,6 +18,6 @@ public class Questao {
     private String alternativaCorreta;
 
     @ManyToOne
-    @JoinColumn(name = "id_gabarito")
-    private Gabarito gabarito;
+    @JoinColumn(name = "id_prova")
+    private Prova prova;
 }

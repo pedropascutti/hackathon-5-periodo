@@ -55,7 +55,7 @@
             <div class="col-md-6">
                 <label for="tipoUsuario" class="form-label">Tipo de Usuário</label>
                 <select class="form-select" id="tipoUsuario" th:field="*{tipoUsuario.id}" required>
-                    <option value="disabled selected">Selecione...</option>
+                    <option disabled selected value="0">Selecione...</option>
                     <option th:each="tipo : ${tipos}" th:value="${tipo.id}" th:text="${tipo.descricao}"></option>
                 </select>
                 <div class="invalid-feedback">Selecione um tipo.</div>

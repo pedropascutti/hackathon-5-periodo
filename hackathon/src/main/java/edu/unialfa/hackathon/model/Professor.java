@@ -21,8 +21,5 @@ public class Professor {
 
     @OneToMany(mappedBy = "professor")
     private List<Disciplina> disciplinas = new ArrayList<>();
-
-    @OneToMany(mappedBy = "professor")
-    private List<Prova> provas = new ArrayList<>();
 }
 
