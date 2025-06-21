@@ -19,14 +19,6 @@ public class QuestaoController {
     private final ProvaService provaService;
     private final QuestaoService questaoService;
 
-
-    @GetMapping("/prova/{id}")
-    public String questoes(@PathVariable Long id, Model model) {
-        model.addAttribute("prova", provaService.buscarPorId(id));
-
-        return "questoes/formulario";
-    }
-
     @GetMapping("/prova/{id}/cadastrar")
     public String cadastrarQuestoes(@PathVariable Long id, Model model) {
         var prova = provaService.buscarPorId(id);

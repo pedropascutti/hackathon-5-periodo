@@ -29,5 +29,10 @@ public class ProvaService {
     public void deletarPorId(Long id) {
         repository.deleteById(id);
     }
+
+    public List<Prova> listarPorProfessor(Long usuarioId) {
+        return repository.findByDisciplina_Professor_Usuario_Id(usuarioId);
+    }
+
 }
 

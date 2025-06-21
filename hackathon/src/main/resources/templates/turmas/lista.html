@@ -19,6 +19,7 @@
         <tr>
             <th>ID</th>
             <th>Nome</th>
+            <th>Alunos</th>
             <th>Ações</th>
         </tr>
         </thead>
@@ -26,6 +27,11 @@
         <tr th:each="turma : ${turmas}">
             <td th:text="${turma.id}">1</td>
             <td th:text="${turma.nome}">Turma A</td>
+            <td>
+                <a th:href="@{'/vinculo-aluno-turma/turma/' + ${turma.id}}" class="btn btn-sm btn-primary me-1" title="Cadastrar alunos">
+                    <i class="bi bi-plus-circle"></i>
+                </a>
+            </td>
             <td>
                 <a class="btn btn-warning btn-sm" th:href="@{/turmas/editar/{id}(id=${turma.id})}"><i class="bi bi-pencil-square"></i></a>
                 <a class="btn btn-danger btn-sm" th:href="@{/turmas/deletar/{id}(id=${turma.id})}" onclick="return confirm('Confirma exclusão?');">

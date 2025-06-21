@@ -21,6 +21,6 @@ public class Prova {
     @JoinColumn(name = "id_disciplina")
     private Disciplina disciplina;
 
-    @OneToMany(mappedBy = "prova")
+    @OneToMany(mappedBy = "prova", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Questao> questoes = new ArrayList<>();
 }

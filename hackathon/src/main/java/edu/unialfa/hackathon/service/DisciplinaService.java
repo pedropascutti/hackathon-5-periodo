@@ -40,4 +40,13 @@ public class DisciplinaService {
     public void deletarPorId(Long id) {
         disciplinaRepository.deleteById(id);
     }
+
+    public List<Disciplina> listarPorProfessor(Long usuarioId) {
+        return disciplinaRepository.findByProfessor_Usuario_Id(usuarioId);
+    }
+
+    public List<Disciplina> listarPorAluno(Long usuarioId) {
+        return disciplinaRepository.findAllByTurma_Alunos_Usuario_Id(usuarioId);
+    }
+
 }
