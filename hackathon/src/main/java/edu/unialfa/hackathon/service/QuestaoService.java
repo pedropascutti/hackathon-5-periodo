@@ -1,5 +1,6 @@
 package edu.unialfa.hackathon.service;
 
+import edu.unialfa.hackathon.model.Prova;
 import edu.unialfa.hackathon.model.Questao;
 import edu.unialfa.hackathon.repository.QuestaoRepository;
 import jakarta.transaction.Transactional;
@@ -28,5 +29,12 @@ public class QuestaoService {
 
     public void deletarPorId(Long id) {
         repository.deleteById(id);
+    }
+
+    public List<Questao> listarPorProvaId(Long provaId) {
+        return repository.findByProva_Id(provaId);
+    }
+    public List<Questao> listarPorProva(Prova prova) {
+        return repository.findByProva(prova);
     }
 }
