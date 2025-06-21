@@ -13,6 +13,8 @@ public class Questao {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    private String numero;
+
     private BigDecimal pontuacao;
 
     private String alternativaCorreta;

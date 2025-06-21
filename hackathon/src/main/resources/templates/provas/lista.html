@@ -22,6 +22,7 @@
             <th>Data</th>
             <th>Disciplina</th>
             <th>Professor</th>
+            <th>Questôes</th>
             <th>Ações</th>
         </tr>
         </thead>
@@ -32,9 +33,11 @@
             <td th:text="${prova.disciplina.nome}">Disciplina</td>
             <td th:text="${prova.disciplina.professor.usuario.nome}">Professor</td>
             <td>
-                <a th:href="@{'/questoes/prova/' + ${prova.id} + '/cadastrar'}" class="btn btn-sm btn-primary me-1">
+                <a th:href="@{'/questoes/prova/' + ${prova.id} + '/cadastrar'}" class="btn btn-sm btn-primary me-1" title="Cadastrar questão">
                     <i class="bi bi-plus-circle"></i>
                 </a>
+            </td>
+            <td>
                 <a th:href="@{'/provas/editar/' + ${prova.id}}" class="btn btn-sm btn-warning me-1">
                     <i class="bi bi-pencil-fill"></i>
                 </a>
