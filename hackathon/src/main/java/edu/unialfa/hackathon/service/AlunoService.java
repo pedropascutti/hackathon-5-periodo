@@ -1,6 +1,7 @@
 package edu.unialfa.hackathon.service;
 
 import edu.unialfa.hackathon.model.Aluno;
+import edu.unialfa.hackathon.model.Turma;
 import edu.unialfa.hackathon.repository.AlunoRepository;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
@@ -39,4 +40,11 @@ public class AlunoService {
                 .ifPresent(repository::delete);
     }
 
+    public List<Aluno> listarAlunosSemTurma() {
+        return repository.findByTurmaIsNull();
+    }
+
+    public List<Aluno> listarPorTurma(Turma turma) {
+        return repository.findByTurmaId(turma.getId());
+    }
 }

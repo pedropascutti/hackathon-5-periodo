@@ -4,6 +4,8 @@ import edu.unialfa.hackathon.model.Usuario;
 import edu.unialfa.hackathon.repository.UsuarioRepository;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -63,5 +65,10 @@ public class UsuarioService implements UserDetailsService {
 
     public void deletarPorId(Long id) {
         usuarioRepository.deleteById(id);
+    }
+
+    public Usuario getUsuarioLogado() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        return (Usuario) auth.getPrincipal();
     }
 }

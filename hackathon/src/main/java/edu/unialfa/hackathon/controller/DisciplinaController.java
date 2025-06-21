@@ -1,13 +1,17 @@
 package edu.unialfa.hackathon.controller;
 
 import edu.unialfa.hackathon.model.Disciplina;
+import edu.unialfa.hackathon.model.Usuario;
 import edu.unialfa.hackathon.service.DisciplinaService;
 import edu.unialfa.hackathon.service.ProfessorService;
 import edu.unialfa.hackathon.service.TurmaService;
+import edu.unialfa.hackathon.service.UsuarioService;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @Controller
 @AllArgsConstructor
@@ -17,12 +21,25 @@ public class DisciplinaController {
     private final DisciplinaService disciplinaService;
     private final TurmaService turmaService;
     private final ProfessorService professorService;
+    private final UsuarioService usuarioService;
 
     @GetMapping
     public String listar(Model model) {
-        model.addAttribute("disciplinas", disciplinaService.listarTodas());
+        Usuario usuarioLogado = usuarioService.getUsuarioLogado();
+        List<Disciplina> disciplinas;
+
+        if (usuarioLogado.getTipoUsuario().getDescricao().equalsIgnoreCase("ADMIN")) {
+            disciplinas = disciplinaService.listarTodas();
+        } else if (usuarioLogado.getTipoUsuario().getDescricao().equalsIgnoreCase("PROFESSOR")) {
+            disciplinas = disciplinaService.listarPorProfessor(usuarioLogado.getId());
+        } else {
+            disciplinas = disciplinaService.listarPorAluno(usuarioLogado.getId());
+        }
+
+        model.addAttribute("disciplinas", disciplinas);
         return "disciplinas/lista";
     }
+
 
     @GetMapping("/nova")
     public String novaDisciplinaForm(Model model) {

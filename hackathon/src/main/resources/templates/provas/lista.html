@@ -22,7 +22,7 @@
             <th>Data</th>
             <th>Disciplina</th>
             <th>Professor</th>
-            <th>Questôes</th>
+            <th>Questões</th>
             <th>Ações</th>
         </tr>
         </thead>
@@ -47,6 +47,9 @@
                     <i class="bi bi-trash-fill"></i>
                 </a>
             </td>
+        </tr>
+        <tr th:if="${#lists.isEmpty(provas)}">
+            <td colspan="4" class="text-center">Nenhuma prova cadastrada.</td>
         </tr>
         </tbody>
     </table>
