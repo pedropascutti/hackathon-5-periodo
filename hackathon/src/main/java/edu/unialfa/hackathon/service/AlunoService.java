@@ -2,6 +2,7 @@ package edu.unialfa.hackathon.service;
 
 import edu.unialfa.hackathon.model.Aluno;
 import edu.unialfa.hackathon.model.Turma;
+import edu.unialfa.hackathon.model.Usuario;
 import edu.unialfa.hackathon.repository.AlunoRepository;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
@@ -46,5 +47,10 @@ public class AlunoService {
 
     public List<Aluno> listarPorTurma(Turma turma) {
         return repository.findByTurmaId(turma.getId());
+    }
+
+    public Aluno buscarPorUsuario(Usuario usuario) {
+        return repository.findByUsuario(usuario)
+                .orElseThrow(() -> new RuntimeException("Aluno não encontrado para o usuário logado"));
     }
 }
