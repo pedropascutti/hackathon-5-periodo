@@ -1,16 +1,18 @@
 class Aluno {
   final int id;
   final String nome;
-  final String RA; // RA do aluno
-  final int classeId;
-  final String? classeNome;
+  final String ra; // RA do aluno
+  final int turmaId;
+  final String? nomeTurma;
+  final String? email;
 
   Aluno({
     required this.id,
     required this.nome,
-    required this.RA,
-    required this.classeId,
-    this.classeNome,
+    required this.ra,
+    required this.turmaId,
+    this.nomeTurma,
+    this.email,
   });
 
   // ⚠️ INTEGRAÇÃO COM API JAVA: Ajuste os campos conforme o JSON retornado pela sua API
@@ -18,9 +20,10 @@ class Aluno {
     return Aluno(
       id: json['id'] ?? 0,
       nome: json['nome'] ?? '',
-      RA: json['RA'] ?? '',
-      classeId: json['classeId'] ?? 0,
-      classeNome: json['classeNome'],
+      ra: json['ra'] ?? json['RA'] ?? '', // Suporte para ambos os formatos
+      turmaId: json['turmaId'] ?? json['classeId'] ?? 0, // Suporte para ambos os formatos
+      nomeTurma: json['nomeTurma'] ?? json['classeNome'],
+      email: json['email'],
     );
   }
 
@@ -28,10 +31,25 @@ class Aluno {
     return {
       'id': id,
       'nome': nome,
-      'RA': RA,
-      'classeId': classeId,
-      'classeNome': classeNome,
+      'ra': ra,
+      'turmaId': turmaId,
+      'nomeTurma': nomeTurma,
+      'email': email,
     };
   }
+
+  @override
+  String toString() => nome;
+  
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is Aluno && runtimeType == other.runtimeType && id == other.id;
+
+  @override
+  int get hashCode => id.hashCode;
 }
+
+// Alias para compatibilidade com código existente
+typedef Estudante = Aluno;
 

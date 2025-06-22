@@ -1,7 +1,9 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
-import '../models/estudante.dart';
+import '../models/estudante.dart'; // Usando o modelo unificado
+import '../models/materia.dart';
+import '../models/turma.dart';
 import '../models/prova.dart';
 import '../models/gabarito.dart';
 import '../services/api_service.dart';
@@ -10,39 +12,46 @@ import '../utilidade/ThemeData.dart';
 import '../widgets/botao_personalizado.dart';
 import '../widgets/tela_loading.dart';
 
-class AnswerInputScreen extends StatefulWidget {
-  final Aluno aluno;
+class GabaritoProva extends StatefulWidget {
+  final Aluno estudante;
+  final Materia? materia;
+  final Turma? turma;
 
-  const AnswerInputScreen({Key? key, required this.aluno}) : super(key: key);
+  const GabaritoProva({
+    Key? key, 
+    required this.estudante,
+    this.materia,
+    this.turma,
+  }) : super(key: key);
 
   @override
-  State<AnswerInputScreen> createState() => _AnswerInputScreenState();
+  State<GabaritoProva> createState() => _GabaritoProvaState();
 }
 
-class _AnswerInputScreenState extends State<AnswerInputScreen> {
+class _GabaritoProvaState extends State<GabaritoProva> {
   List<Prova> _provas = [];
-  Prova? _selecionarProva;
+  Prova? _provaSelecionada;
   List<Gabarito> _gabaritos = [];
   bool _carregando = true;
   bool _enviando = false;
-  bool _ProcessandoOcr = false;
+  bool _processandoOcr = false;
   String? _erroMensagem;
   File? _imagemCapturada;
 
   @override
   void initState() {
     super.initState();
-    _carregarProva();
+    _carregarProvas();
   }
 
-  Future<void> _carregarProva() async {
+  Future<void> _carregarProvas() async {
     setState(() {
       _carregando = true;
       _erroMensagem = null;
     });
 
     try {
-      final provas = await ApiService.getProvas();
+      final provas = await ApiService.getExams();
       
       setState(() {
         _provas = provas;
@@ -56,234 +65,121 @@ class _AnswerInputScreenState extends State<AnswerInputScreen> {
     }
   }
 
-  void _selecaoProva(Prova prova) {
+  void _selecionarProva(Prova prova) {
     setState(() {
-      _selecionarProva = prova;
+      _provaSelecionada = prova;
       _gabaritos = List.generate(
-        prova.questoes,
-        (index) => Gabarito(numeroQuestao: index + 1, selecionarOpcao: ''),
+        prova.totalQuestoes,
+        (index) => Gabarito(
+          questao: index + 1,
+          resposta: '',
+          estudanteId: widget.estudante.id,
+          provaId: prova.id,
+        ),
       );
-      _imagemCapturada = null;
     });
   }
 
-  void _atualizarGabarito(int questionIndex, String option) {
+  void _atualizarResposta(int questao, String resposta) {
     setState(() {
-      _gabaritos[questionIndex] = Gabarito(
-        numeroQuestao: questionIndex + 1,
-        selecionarOpcao: option,
-      );
+      final index = _gabaritos.indexWhere((g) => g.questao == questao);
+      if (index != -1) {
+        _gabaritos[index] = _gabaritos[index].copyWith(resposta: resposta);
+      }
     });
   }
-  Future<bool> _requestPermissions() async {
+
+  Future<void> _capturarGabarito() async {
+    // Verificar permissões
     final cameraStatus = await Permission.camera.request();
     final storageStatus = await Permission.storage.request();
-    
-    return cameraStatus.isGranted && storageStatus.isGranted;
-  }
-  void _showImageSourceDialog() {
-    showModalBottomSheet(
-      context: context,
-      builder: (BuildContext context) {
-        return SafeArea(
-          child: Wrap(
-            children: [
-              ListTile(
-                leading: const Icon(Icons.camera_alt),
-                title: const Text('Câmera'),
-                onTap: () {
-                  Navigator.of(context).pop();
-                  _captureFromCamera();
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.photo_library),
-                title: const Text('Galeria'),
-                onTap: () {
-                  Navigator.of(context).pop();
-                  _pickFromGallery();
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.cancel),
-                title: const Text('Cancelar'),
-                onTap: () => Navigator.of(context).pop(),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-  Future<void> _captureFromCamera() async {
-    final hasPermission = await _requestPermissions();
-    if (!hasPermission) {
+
+    if (!cameraStatus.isGranted || !storageStatus.isGranted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Permissões de câmera necessárias'),
-          backgroundColor: AppTheme.errorColor,
+          content: Text('Permissões de câmera e armazenamento são necessárias'),
+          backgroundColor: Colors.red,
         ),
       );
       return;
     }
 
     setState(() {
-      _ProcessandoOcr = true;
+      _processandoOcr = true;
     });
 
     try {
-      final imageFile = await OcrService.captureImageFromCamera();
-      if (imageFile != null) {
-        await _processImageWithOcr(imageFile);
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erro ao capturar imagem: $e'),
-          backgroundColor: AppTheme.errorColor,
-        ),
-      );
-    } finally {
-      setState(() {
-        _ProcessandoOcr = false;
-      });
-    }
-  }
-  Future<void> _pickFromGallery() async {
-    setState(() {
-      _ProcessandoOcr = true;
-    });
-
-    try {
-      final imageFile = await OcrService.pickImageFromGallery();
-      if (imageFile != null) {
-        await _processImageWithOcr(imageFile);
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erro ao selecionar imagem: $e'),
-          backgroundColor: AppTheme.errorColor,
-        ),
-      );
-    } finally {
-      setState(() {
-        _ProcessandoOcr = false;
-      });
-    }
-  }
-  Future<void> _processImageWithOcr(File imageFile) async {
-    try {
-      final recognizedText = await OcrService.recognizeTextFromImage(imageFile);
+      final resultado = await OcrService.capturarEProcessarGabarito();
       
-      if (recognizedText.isEmpty) {
+      if (resultado != null) {
+        setState(() {
+          _imagemCapturada = resultado['imagem'];
+        });
+
+        final respostasDetectadas = resultado['respostas'] as Map<int, String>;
+        final precisao = resultado['precisao'] as double;
+
+        // Atualizar gabaritos com as respostas detectadas
+        for (final entry in respostasDetectadas.entries) {
+          if (entry.key <= _gabaritos.length) {
+            _atualizarResposta(entry.key, entry.value);
+          }
+        }
+
+        // Mostrar feedback do OCR
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Nenhum texto foi reconhecido na imagem'),
-            backgroundColor: AppTheme.errorColor,
+          SnackBar(
+            content: Text(
+              'OCR processado! ${respostasDetectadas.length} respostas detectadas '
+              '(Precisão: ${(precisao * 100).toStringAsFixed(1)}%)',
+            ),
+            backgroundColor: precisao > 0.7 ? Colors.green : Colors.orange,
+            duration: const Duration(seconds: 4),
           ),
         );
-        return;
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Nenhuma resposta foi detectada na imagem'),
+            backgroundColor: Colors.orange,
+          ),
+        );
       }
-      final recognizedAnswers = OcrService.processGabaritoTextAdvanced(
-        recognizedText, 
-        _selecionarProva!.questoes
-      );
-      final validatedAnswers = OcrService.validateAndCorrectAnswers(
-        recognizedAnswers, 
-        _selecionarProva!.questoes
-      );
-      final stats = OcrService.getRecognitionStats(
-        recognizedAnswers, 
-        _selecionarProva!.questoes
-      );
-
-      setState(() {
-        _gabaritos = validatedAnswers;
-        _imagemCapturada = imageFile;
-      });
-      _showOcrResultDialog(recognizedText, stats);
-
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Erro no processamento OCR: $e'),
-          backgroundColor: AppTheme.errorColor,
+          backgroundColor: Colors.red,
         ),
       );
+    } finally {
+      setState(() {
+        _processandoOcr = false;
+      });
     }
   }
-  void _showOcrResultDialog(String recognizedText, Map<String, dynamic> stats) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Resultado do Reconhecimento'),
-          content: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('Questões reconhecidas: ${stats['recognized']}/${stats['total']}'),
-                Text('Precisão: ${stats['accuracy']}%'),
-                const SizedBox(height: 16),
-                const Text('Texto reconhecido:', style: TextStyle(fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    recognizedText.length > 200 
-                        ? '${recognizedText.substring(0, 200)}...' 
-                        : recognizedText,
-                    style: const TextStyle(fontSize: 12),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('OK'),
-            ),
-          ],
-        );
-      },
-    );
-  }
 
-  Future<void> _submitAnswers() async {
-    // Validar se todas as questões foram respondidas
-    final unansweredQuestions = _gabaritos
-        .where((answer) => answer.selecionarOpcao.isEmpty)
-        .toList();
-
-    if (unansweredQuestions.isNotEmpty) {
-      final shouldContinue = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Questões não respondidas'),
-          content: Text(
-            'Existem ${unansweredQuestions.length} questões sem resposta. Deseja continuar mesmo assim?',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Cancelar'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('Continuar'),
-            ),
-          ],
+  Future<void> _salvarGabarito() async {
+    if (_provaSelecionada == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Selecione uma prova primeiro'),
+          backgroundColor: Colors.red,
         ),
       );
+      return;
+    }
 
-      if (shouldContinue != true) return;
+    // Verificar se há pelo menos uma resposta preenchida
+    final respostasPreenchidas = _gabaritos.where((g) => g.resposta.isNotEmpty).length;
+    if (respostasPreenchidas == 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Preencha pelo menos uma resposta'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
     }
 
     setState(() {
@@ -291,49 +187,49 @@ class _AnswerInputScreenState extends State<AnswerInputScreen> {
     });
 
     try {
-      final studentAnswers = StudentAnswers(
-        estudanteId: widget.aluno.id,
-        provaId: _selecionarProva!.id,
-        gabarito: _gabaritos.where((answer) => answer.selecionarOpcao.isNotEmpty).toList(),
-      );
-
-      final success = await ApiService.submitAnswers(studentAnswers);
-
-      if (success) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Respostas enviadas com sucesso!'),
-              backgroundColor: Colors.green,
-            ),
-          );
-          Navigator.of(context).pop();
-        }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Erro ao enviar respostas. Tente novamente.'),
-              backgroundColor: AppTheme.errorColor,
-            ),
-          );
+      // Salvar cada gabarito individualmente
+      bool todosSalvos = true;
+      for (final gabarito in _gabaritos) {
+        if (gabarito.resposta.isNotEmpty) {
+          final sucesso = await ApiService.saveGabarito(gabarito);
+          if (!sucesso) {
+            todosSalvos = false;
+            break;
+          }
         }
       }
-    } catch (e) {
-      if (mounted) {
+
+      if (todosSalvos) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Erro ao enviar respostas: $e'),
-            backgroundColor: AppTheme.errorColor,
+            content: Text(
+              'Gabarito salvo com sucesso! ($respostasPreenchidas/${_gabaritos.length} respostas)',
+            ),
+            backgroundColor: Colors.green,
+          ),
+        );
+        
+        // Voltar para a tela anterior após salvar
+        Navigator.of(context).pop();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Erro ao salvar algumas respostas'),
+            backgroundColor: Colors.red,
           ),
         );
       }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erro ao salvar gabarito: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     } finally {
-      if (mounted) {
-        setState(() {
-          _enviando = false;
-        });
-      }
+      setState(() {
+        _enviando = false;
+      });
     }
   }
 
@@ -341,34 +237,70 @@ class _AnswerInputScreenState extends State<AnswerInputScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Respostas - ${widget.aluno.nome}'),
-        actions: [
-          if (ApiService.isSimulationMode)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              margin: const EdgeInsets.only(right: 8),
-              decoration: BoxDecoration(
-                color: Colors.orange,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Text(
-                'SIMULAÇÃO',
-                style: TextStyle(fontSize: 10, color: Colors.white),
-              ),
-            ),
-        ],
+        title: const Text('Gabarito da Prova'),
+        backgroundColor: Colors.blue,
+        foregroundColor: Colors.white,
       ),
-      body: LoadingOverlay(
-        isLoading: _enviando || _ProcessandoOcr,
-        loadingMessage: _enviando
-            ? 'Enviando respostas...' 
-            : 'Processando imagem...',
-        child: _buildBody(),
-      ),
+      body: _construirCorpo(),
     );
   }
 
-  Widget _buildBody() {
+  Widget _construirCorpo() {
+    return Column(
+      children: [
+        // Informações do contexto
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          color: Colors.blue[50],
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (widget.materia != null) ...[
+                Text(
+                  'Matéria: ${widget.materia!.nome}',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.blue,
+                  ),
+                ),
+              ],
+              if (widget.turma != null) ...[
+                Text(
+                  'Turma: ${widget.turma!.nomeCompleto}',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[700],
+                  ),
+                ),
+              ],
+              Text(
+                'Aluno: ${widget.estudante.nome}',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              Text(
+                'RA: ${widget.estudante.ra}',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[700],
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        Expanded(
+          child: _construirConteudo(),
+        ),
+      ],
+    );
+  }
+
+  Widget _construirConteudo() {
     if (_carregando) {
       return const LoadingWidget(message: 'Carregando provas...');
     }
@@ -378,20 +310,12 @@ class _AnswerInputScreenState extends State<AnswerInputScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
-              Icons.error_outline,
-              size: 64,
-              color: AppTheme.errorColor,
-            ),
+            const Icon(Icons.error_outline, size: 64, color: Colors.red),
             const SizedBox(height: 16),
-            Text(
-              _erroMensagem!,
-              style: AppTheme.subtitleStyle,
-              textAlign: TextAlign.center,
-            ),
+            Text(_erroMensagem!, textAlign: TextAlign.center),
             const SizedBox(height: 16),
             ElevatedButton(
-              onPressed: _carregarProva,
+              onPressed: _carregarProvas,
               child: const Text('Tentar Novamente'),
             ),
           ],
@@ -399,14 +323,27 @@ class _AnswerInputScreenState extends State<AnswerInputScreen> {
       );
     }
 
-    if (_selecionarProva == null) {
-      return _buildExamSelection();
+    if (_provas.isEmpty) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.quiz_outlined, size: 64, color: Colors.grey),
+            SizedBox(height: 16),
+            Text('Nenhuma prova disponível'),
+          ],
+        ),
+      );
     }
 
-    return _buildAnswerInput();
+    if (_provaSelecionada == null) {
+      return _construirSelecaoProva();
+    }
+
+    return _construirFormularioGabarito();
   }
 
-  Widget _buildExamSelection() {
+  Widget _construirSelecaoProva() {
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -414,28 +351,54 @@ class _AnswerInputScreenState extends State<AnswerInputScreen> {
         children: [
           Text(
             'Selecione a Prova',
-            style: AppTheme.titleStyle,
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: Colors.blue[800],
+            ),
           ),
           const SizedBox(height: 16),
           Expanded(
             child: ListView.builder(
               itemCount: _provas.length,
               itemBuilder: (context, index) {
-                final exam = _provas[index];
+                final prova = _provas[index];
                 return Card(
-                  margin: const EdgeInsets.only(bottom: 8),
+                  margin: const EdgeInsets.only(bottom: 12),
                   child: ListTile(
-                    title: Text(exam.titulo),
+                    contentPadding: const EdgeInsets.all(16),
+                    leading: CircleAvatar(
+                      backgroundColor: Colors.blue,
+                      child: Text(
+                        '${prova.totalQuestoes}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    title: Text(
+                      prova.titulo,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Disciplina: ${exam.assunto}'),
-                        Text('Questões: ${exam.questoes}'),
-                        Text('Data: ${exam.data.day}/${exam.data.month}/${exam.data.year}'),
+                        if (prova.descricao.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Text(prova.descricao),
+                        ],
+                        const SizedBox(height: 4),
+                        Text(
+                          '${prova.totalQuestoes} questões',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                          ),
+                        ),
                       ],
                     ),
                     trailing: const Icon(Icons.arrow_forward_ios),
-                    onTap: () => _selecaoProva(exam),
+                    onTap: () => _selecionarProva(prova),
                   ),
                 );
               },
@@ -446,103 +409,137 @@ class _AnswerInputScreenState extends State<AnswerInputScreen> {
     );
   }
 
-  Widget _buildAnswerInput() {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Informações da prova
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _selecionarProva!.titulo,
-                    style: AppTheme.titleStyle,
-                  ),
-                  Text('Aluno: ${widget.aluno.nome}'),
-                  Text('RA: ${widget.aluno.RA}'),
-                  Text('Total de questões: ${_selecionarProva!.questoes}'),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Botões de ação
-          Row(
+  Widget _construirFormularioGabarito() {
+    return Column(
+      children: [
+        // Cabeçalho da prova selecionada
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          color: Colors.green[50],
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: CustomButton(
-                  text: 'Capturar Gabarito',
-                  onPressed: _showImageSourceDialog,
-                  backgroundColor: AppTheme.secondaryColor,
+              Text(
+                _provaSelecionada!.titulo,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green,
                 ),
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: CustomButton(
-                  text: 'Limpar Respostas',
-                  onPressed: () {
-                    setState(() {
-                      _gabaritos = List.generate(
-                        _selecionarProva!.questoes,
-                        (index) => Gabarito(numeroQuestao: index + 1, selecionarOpcao: ''),
-                      );
-                      _imagemCapturada = null;
-                    });
-                  },
-                  backgroundColor: Colors.grey,
+              Text(
+                '${_provaSelecionada!.totalQuestoes} questões',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[700],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+        ),
 
-          // Lista de questões
-          Expanded(
-            child: ListView.builder(
-              itemCount: _selecionarProva!.questoes,
-              itemBuilder: (context, index) {
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Questão ${index + 1}',
-                          style: AppTheme.subtitleStyle,
+        // Botões de ação
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Expanded(
+                child: CustomButton(
+                  text: _processandoOcr ? 'Processando...' : 'Capturar Gabarito',
+                  onPressed: _processandoOcr ? null : _capturarGabarito,
+                  backgroundColor: Colors.orange,
+                  icon: _processandoOcr ? null : Icons.camera_alt,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: CustomButton(
+                  text: _enviando ? 'Salvando...' : 'Salvar',
+                  onPressed: _enviando ? null : _salvarGabarito,
+                  backgroundColor: Colors.green,
+                  icon: _enviando ? null : Icons.save,
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Imagem capturada (se houver)
+        if (_imagemCapturada != null) ...[
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16),
+            height: 120,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.file(
+                _imagemCapturada!,
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
+
+        // Lista de questões
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: _gabaritos.length,
+            itemBuilder: (context, index) {
+              final gabarito = _gabaritos[index];
+              return Card(
+                margin: const EdgeInsets.only(bottom: 8),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: Colors.blue,
+                          borderRadius: BorderRadius.circular(20),
                         ),
-                        const SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: ['A', 'B', 'C', 'D', 'E'].map((option) {
-                            final isSelected = _gabaritos[index].selecionarOpcao == option;
-                            return GestureDetector(
-                              onTap: () => _atualizarGabarito(index, option),
-                              child: Container(
-                                width: 50,
-                                height: 50,
-                                decoration: BoxDecoration(
-                                  color: isSelected ? AppTheme.primaryColor : Colors.grey[200],
-                                  borderRadius: BorderRadius.circular(25),
-                                  border: Border.all(
-                                    color: isSelected ? AppTheme.primaryColor : Colors.grey,
-                                    width: 2,
+                        child: Center(
+                          child: Text(
+                            '${gabarito.questao}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Row(
+                          children: ['A', 'B', 'C', 'D', 'E'].map((opcao) {
+                            final selecionada = gabarito.resposta == opcao;
+                            return Expanded(
+                              child: GestureDetector(
+                                onTap: () => _atualizarResposta(gabarito.questao, opcao),
+                                child: Container(
+                                  margin: const EdgeInsets.symmetric(horizontal: 2),
+                                  padding: const EdgeInsets.symmetric(vertical: 8),
+                                  decoration: BoxDecoration(
+                                    color: selecionada ? Colors.blue : Colors.grey[200],
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(
+                                      color: selecionada ? Colors.blue : Colors.grey,
+                                    ),
                                   ),
-                                ),
-                                child: Center(
                                   child: Text(
-                                    option,
+                                    opcao,
+                                    textAlign: TextAlign.center,
                                     style: TextStyle(
-                                      color: isSelected ? Colors.white : Colors.black,
+                                      color: selecionada ? Colors.white : Colors.black,
                                       fontWeight: FontWeight.bold,
-                                      fontSize: 18,
                                     ),
                                   ),
                                 ),
@@ -550,30 +547,16 @@ class _AnswerInputScreenState extends State<AnswerInputScreen> {
                             );
                           }).toList(),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                );
-              },
-            ),
+                ),
+              );
+            },
           ),
-
-          // Botão de enviar
-          const SizedBox(height: 16),
-          CustomButton(
-            text: 'Enviar Respostas',
-            onPressed: _submitAnswers,
-            isLoading: _enviando,
-          ),
-        ],
-      ),
+        ),
+      ],
     );
-  }
-
-  @override
-  void dispose() {
-    OcrService.dispose();
-    super.dispose();
   }
 }
 

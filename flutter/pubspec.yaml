@@ -1,7 +1,7 @@
 name: gabarito_app
 description: Aplicativo para correção de gabaritos - Hackathon 5º Período
 
-publish_to: 'none'
+publish_to:
 
 version: 1.0.0+1
 
@@ -11,17 +11,11 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  
-  # Dependências principais
-  http: ^1.1.0                    # Para requisições HTTP à API Java
-  shared_preferences: ^2.2.2      # Para armazenamento local de dados
-  
-  # Dependências para imagem e OCR
-  image_picker: ^1.0.4            # Para captura/seleção de imagens
-  google_mlkit_text_recognition: ^0.9.0  # Para reconhecimento de texto
-  permission_handler: ^11.0.1     # Para permissões da câmera
-  
-  # UI e navegação
+  http: ^1.1.0
+  shared_preferences: ^2.2.2
+  image_picker: ^1.0.4
+  google_mlkit_text_recognition: ^0.9.0
+  permission_handler: ^11.0.1
   cupertino_icons: ^1.0.2
 
 dev_dependencies:
@@ -32,7 +26,7 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   
-  # Assets para testes
-  assets:
-    - assets/images/
+#  # Assets para testes
+#  assets:
+#    - assets/images/
 

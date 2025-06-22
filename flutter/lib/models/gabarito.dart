@@ -1,25 +1,62 @@
 class Gabarito {
-  final int numeroQuestao;
-  final String selecionarOpcao; // A, B, C, D, E
+  final int questao;
+  final String resposta; // A, B, C, D, E
+  final int estudanteId;
+  final int provaId;
 
   Gabarito({
-    required this.numeroQuestao,
-    required this.selecionarOpcao,
+    required this.questao,
+    required this.resposta,
+    required this.estudanteId,
+    required this.provaId,
   });
 
   factory Gabarito.fromJson(Map<String, dynamic> json) {
     return Gabarito(
-      numeroQuestao: json['numeroQuestao'] ?? 0,
-      selecionarOpcao: json['selecionarOpcao'] ?? '',
+      questao: json['questao'] ?? json['numeroQuestao'] ?? 0,
+      resposta: json['resposta'] ?? json['selecionarOpcao'] ?? '',
+      estudanteId: json['estudanteId'] ?? 0,
+      provaId: json['provaId'] ?? 0,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'numeroQuestao': numeroQuestao,
-      'selecionarOpcao': selecionarOpcao,
+      'questao': questao,
+      'resposta': resposta,
+      'estudanteId': estudanteId,
+      'provaId': provaId,
     };
   }
+
+  Gabarito copyWith({
+    int? questao,
+    String? resposta,
+    int? estudanteId,
+    int? provaId,
+  }) {
+    return Gabarito(
+      questao: questao ?? this.questao,
+      resposta: resposta ?? this.resposta,
+      estudanteId: estudanteId ?? this.estudanteId,
+      provaId: provaId ?? this.provaId,
+    );
+  }
+
+  @override
+  String toString() => 'Questão $questao: $resposta';
+  
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is Gabarito && 
+      runtimeType == other.runtimeType && 
+      questao == other.questao &&
+      estudanteId == other.estudanteId &&
+      provaId == other.provaId;
+
+  @override
+  int get hashCode => questao.hashCode ^ estudanteId.hashCode ^ provaId.hashCode;
 }
 
 class StudentAnswers {

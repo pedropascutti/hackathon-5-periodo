@@ -1,18 +1,18 @@
 class Prova {
   final int id;
   final String titulo;
-  final String assunto;
-  final DateTime data;
-  final int classeId;
-  final int questoes;
+  final String descricao;
+  final DateTime? data;
+  final int? classeId;
+  final int totalQuestoes;
 
   Prova({
     required this.id,
     required this.titulo,
-    required this.assunto,
-    required this.data,
-    required this.classeId,
-    required this.questoes,
+    this.descricao = '',
+    this.data,
+    this.classeId,
+    required this.totalQuestoes,
   });
 
   // ⚠️ INTEGRAÇÃO COM API JAVA: Ajuste os campos conforme o JSON retornado pela sua API
@@ -20,10 +20,10 @@ class Prova {
     return Prova(
       id: json['id'] ?? 0,
       titulo: json['titulo'] ?? '',
-      assunto: json['assunto'] ?? '',
-      data: DateTime.parse(json['data'] ?? DateTime.now().toIso8601String()),
-      classeId: json['classeId'] ?? 0,
-      questoes: json['questoes'] ?? 0,
+      descricao: json['descricao'] ?? json['assunto'] ?? '',
+      data: json['data'] != null ? DateTime.parse(json['data']) : null,
+      classeId: json['classeId'],
+      totalQuestoes: json['totalQuestoes'] ?? json['questoes'] ?? 0,
     );
   }
 
@@ -31,11 +31,22 @@ class Prova {
     return {
       'id': id,
       'titulo': titulo,
-      'assunto': assunto,
-      'data': data.toIso8601String(),
+      'descricao': descricao,
+      'data': data?.toIso8601String(),
       'classeId': classeId,
-      'questoes': questoes,
+      'totalQuestoes': totalQuestoes,
     };
   }
+
+  @override
+  String toString() => titulo;
+  
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is Prova && runtimeType == other.runtimeType && id == other.id;
+
+  @override
+  int get hashCode => id.hashCode;
 }
 

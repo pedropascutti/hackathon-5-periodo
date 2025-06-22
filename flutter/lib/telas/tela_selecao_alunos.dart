@@ -1,25 +1,32 @@
 import 'package:flutter/material.dart';
 import '../models/estudante.dart';
+import '../models/materia.dart';
+import '../models/turma.dart';
 import '../services/api_service.dart';
 import '../utilidade/ThemeData.dart';
 import '../widgets/tela_loading.dart';
 import 'gabarito_prova.dart';
 
-class SelecionarAluno extends StatefulWidget {
-  const SelecionarAluno({Key? key}) : super(key: key);
+class TelaSelecaoAlunos extends StatefulWidget {
+  final Materia materia;
+  final Turma turma;
+
+  const TelaSelecaoAlunos({
+    Key? key,
+    required this.materia,
+    required this.turma,
+  }) : super(key: key);
 
   @override
-  State<SelecionarAluno> createState() => _SelecionarAlunoState();
+  State<TelaSelecaoAlunos> createState() => _TelaSelecaoAlunosState();
 }
 
-class _SelecionarAlunoState extends State<SelecionarAluno> {
-  List<Estudante> _alunos = [];
-  List<Estudante> _alunosFiltrados = [];
+class _TelaSelecaoAlunosState extends State<TelaSelecaoAlunos> {
+  List<Aluno> _alunos = [];
+  List<Aluno> _alunosFiltrados = [];
   bool _carregando = true;
   String? _mensagemErro;
   final TextEditingController _controllerBusca = TextEditingController();
-
-  get turmaId => null;
 
   @override
   void initState() {
@@ -41,7 +48,7 @@ class _SelecionarAlunoState extends State<SelecionarAluno> {
     });
 
     try {
-      final alunos = await ApiService.obterAlunosTurma(1);
+      final alunos = await ApiService.obterAlunosTurma(widget.turma.id);
       setState(() {
         _alunos = alunos;
         _alunosFiltrados = alunos;
@@ -69,10 +76,14 @@ class _SelecionarAlunoState extends State<SelecionarAluno> {
     });
   }
 
-  void _selecionarAluno(Estudante aluno) {
+  void _selecionarAluno(Aluno aluno) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => GabaritoProva(estudante: aluno),
+        builder: (context) => GabaritoProva(
+          estudante: aluno,
+          materia: widget.materia,
+          turma: widget.turma,
+        ),
       ),
     );
   }
@@ -87,6 +98,33 @@ class _SelecionarAlunoState extends State<SelecionarAluno> {
       ),
       body: Column(
         children: [
+          // Informações do contexto
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            color: Colors.blue[50],
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Matéria: ${widget.materia.nome}',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.blue,
+                  ),
+                ),
+                Text(
+                  'Turma: ${widget.turma.nomeCompleto}',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[700],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
           // Campo de busca
           Container(
             padding: const EdgeInsets.all(16),
@@ -160,7 +198,7 @@ class _SelecionarAlunoState extends State<SelecionarAluno> {
             Text(
               _controllerBusca.text.isNotEmpty
                   ? 'Nenhum aluno encontrado para "${_controllerBusca.text}"'
-                  : 'Nenhum aluno disponível',
+                  : 'Nenhum aluno disponível nesta turma',
               textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 16, color: Colors.grey),
             ),
@@ -204,10 +242,10 @@ class _SelecionarAlunoState extends State<SelecionarAluno> {
               children: [
                 const SizedBox(height: 4),
                 Text('RA: ${aluno.ra}'),
-                if (aluno.nomeTurma != null) ...[
+                if (aluno.email != null && aluno.email!.isNotEmpty) ...[
                   const SizedBox(height: 2),
                   Text(
-                    'Turma: ${aluno.nomeTurma}',
+                    'Email: ${aluno.email}',
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.grey[600],

@@ -49,168 +49,86 @@ class OcrService {
     try {
       final InputImage inputImage = InputImage.fromFile(imageFile);
       final RecognizedText recognizedText = await _textRecognizer.processImage(inputImage);
-      
       return recognizedText.text;
     } catch (e) {
-      print('Erro ao reconhecer texto: $e');
+      print('Erro no reconhecimento de texto: $e');
       return '';
     }
   }
 
-  // Processar gabarito a partir do texto reconhecido
-  static List<Gabarito> processGabaritoText(String recognizedText, int totalQuestions) {
-    List<Gabarito> answers = [];
+  // Processar gabarito a partir de texto reconhecido
+  static Map<int, String> processGabaritoFromText(String recognizedText) {
+    Map<int, String> respostas = {};
     
-    try {
-      // Dividir o texto em linhas
-      List<String> lines = recognizedText.split('\n');
-      
-      // Padrões para reconhecer respostas
-      // Exemplo: "1. A", "2. B", "Q1: C", "1) D", etc.
-      RegExp answerPattern = RegExp(r'(\d+)[\.\)\:\s]*([A-E])', caseSensitive: false);
-      
-      for (String line in lines) {
-        line = line.trim();
-        if (line.isEmpty) continue;
-        
-        // Buscar padrões de resposta na linha
-        Iterable<RegExpMatch> matches = answerPattern.allMatches(line);
-        
-        for (RegExpMatch match in matches) {
-          int questionNumber = int.tryParse(match.group(1) ?? '') ?? 0;
-          String selectedOption = (match.group(2) ?? '').toUpperCase();
+    // Padrões de reconhecimento para diferentes formatos de gabarito
+    final patterns = [
+      RegExp(r'(\d+)[\.\)\-\s]*([ABCDE])', caseSensitive: false),
+      RegExp(r'Q(\d+)[\:\.\)\-\s]*([ABCDE])', caseSensitive: false),
+      RegExp(r'(\d+)[\s]*[\-\.\)]*[\s]*([ABCDE])', caseSensitive: false),
+    ];
+
+    for (final pattern in patterns) {
+      final matches = pattern.allMatches(recognizedText);
+      for (final match in matches) {
+        try {
+          final questao = int.parse(match.group(1)!);
+          final resposta = match.group(2)!.toUpperCase();
           
-          // Validar se a questão e opção são válidas
-          if (questionNumber > 0 && 
-              questionNumber <= totalQuestions && 
-              ['A', 'B', 'C', 'D', 'E'].contains(selectedOption)) {
-            
-            // Verificar se já existe uma resposta para esta questão
-            bool exists = answers.any((answer) => answer.numeroQuestao == questionNumber);
-            
-            if (!exists) {
-              answers.add(Gabarito(
-                numeroQuestao: questionNumber,
-                selecionarOpcao: selectedOption,
-              ));
-            }
+          if (['A', 'B', 'C', 'D', 'E'].contains(resposta)) {
+            respostas[questao] = resposta;
           }
+        } catch (e) {
+          // Ignorar erros de parsing
         }
       }
-      
-      // Ordenar respostas por número da questão
-      answers.sort((a, b) => a.numeroQuestao.compareTo(b.numeroQuestao));
-      
-    } catch (e) {
-      print('Erro ao processar texto do gabarito: $e');
     }
-    
-    return answers;
+
+    return respostas;
   }
 
-  // Processar gabarito com padrões alternativos
-  static List<Gabarito> processGabaritoTextAdvanced(String recognizedText, int totalQuestions) {
-    List<Gabarito> answers = [];
-    
+  // Capturar e processar gabarito (método principal)
+  static Future<Map<String, dynamic>?> capturarEProcessarGabarito() async {
     try {
-      // Limpar e normalizar o texto
-      String cleanText = recognizedText
-          .replaceAll(RegExp(r'[^\w\s\.\)\:\-]'), ' ')
-          .replaceAll(RegExp(r'\s+'), ' ')
-          .trim();
+      // Mostrar opções para o usuário escolher entre câmera ou galeria
+      File? imageFile;
       
-      // Múltiplos padrões para diferentes formatos de gabarito
-      List<RegExp> patterns = [
-        RegExp(r'(\d+)[\.\)\:\s]*([A-E])', caseSensitive: false),  // 1. A, 2) B, 3: C
-        RegExp(r'Q(\d+)[\.\)\:\s]*([A-E])', caseSensitive: false), // Q1. A, Q2) B
-        RegExp(r'(\d+)\s*-\s*([A-E])', caseSensitive: false),      // 1 - A, 2 - B
-        RegExp(r'([A-E])\s*(\d+)', caseSensitive: false),          // A 1, B 2 (formato invertido)
-      ];
+      // Por simplicidade, vamos usar a câmera por padrão
+      // Em uma implementação real, você mostraria um dialog para o usuário escolher
+      imageFile = await captureImageFromCamera();
       
-      for (RegExp pattern in patterns) {
-        Iterable<RegExpMatch> matches = pattern.allMatches(cleanText);
-        
-        for (RegExpMatch match in matches) {
-          int questionNumber;
-          String selectedOption;
-          
-          // Verificar se é formato invertido (letra primeiro)
-          if (pattern.pattern.contains('([A-E])\\s*(\\d+)')) {
-            selectedOption = (match.group(1) ?? '').toUpperCase();
-            questionNumber = int.tryParse(match.group(2) ?? '') ?? 0;
-          } else {
-            questionNumber = int.tryParse(match.group(1) ?? '') ?? 0;
-            selectedOption = (match.group(2) ?? '').toUpperCase();
-          }
-          
-          // Validar e adicionar resposta
-          if (questionNumber > 0 && 
-              questionNumber <= totalQuestions && 
-              ['A', 'B', 'C', 'D', 'E'].contains(selectedOption)) {
-            
-            bool exists = answers.any((answer) => answer.numeroQuestao == questionNumber);
-            
-            if (!exists) {
-              answers.add(Gabarito(
-                numeroQuestao: questionNumber,
-                selecionarOpcao: selectedOption,
-              ));
-            }
-          }
-        }
+      if (imageFile == null) {
+        return null;
       }
+
+      // Reconhecer texto na imagem
+      final recognizedText = await recognizeTextFromImage(imageFile);
       
-      // Ordenar respostas
-      answers.sort((a, b) => a.numeroQuestao.compareTo(b.numeroQuestao));
+      if (recognizedText.isEmpty) {
+        return null;
+      }
+
+      // Processar respostas do gabarito
+      final respostasDetectadas = processGabaritoFromText(recognizedText);
       
+      // Calcular precisão baseada na quantidade de respostas detectadas
+      final precisao = respostasDetectadas.isNotEmpty ? 
+          (respostasDetectadas.length / 20.0).clamp(0.0, 1.0) : 0.0;
+
+      return {
+        'imagem': imageFile,
+        'textoReconhecido': recognizedText,
+        'respostas': respostasDetectadas,
+        'precisao': precisao,
+      };
     } catch (e) {
-      print('Erro no processamento avançado: $e');
+      print('Erro no processamento do gabarito: $e');
+      return null;
     }
-    
-    return answers;
   }
 
-  // Validar e corrigir respostas reconhecidas
-  static List<Gabarito> validateAndCorrectAnswers(List<Gabarito> recognizedAnswers, int totalQuestions) {
-    List<Gabarito> validatedAnswers = [];
-    
-    // Criar lista completa de questões
-    for (int i = 1; i <= totalQuestions; i++) {
-      Gabarito? existingAnswer = recognizedAnswers
-          .where((answer) => answer.numeroQuestao == i)
-          .firstOrNull;
-      
-      if (existingAnswer != null) {
-        validatedAnswers.add(existingAnswer);
-      } else {
-        // Adicionar resposta vazia para questões não reconhecidas
-        validatedAnswers.add(Gabarito(
-          numeroQuestao: i,
-          selecionarOpcao: '',
-        ));
-      }
-    }
-    
-    return validatedAnswers;
-  }
-
-  // Liberar recursos
+  // Limpar recursos
   static void dispose() {
     _textRecognizer.close();
-  }
-
-  // Estatísticas do reconhecimento
-  static Map<String, dynamic> getRecognitionStats(List<Gabarito> answers, int totalQuestions) {
-    int recognizedCount = answers.where((answer) => answer.selecionarOpcao.isNotEmpty).length;
-    int missingCount = totalQuestions - recognizedCount;
-    double accuracy = (recognizedCount / totalQuestions) * 100;
-    
-    return {
-      'total': totalQuestions,
-      'recognized': recognizedCount,
-      'missing': missingCount,
-      'accuracy': accuracy.toStringAsFixed(1),
-    };
   }
 }
 
