@@ -20,7 +20,6 @@ import java.util.List;
 public class ProvaController {
     private final ProvaService provaService;
     private final DisciplinaService disciplinaService;
-    private final ProfessorService professorService;
     private final UsuarioService usuarioService;
 
     @GetMapping
