@@ -1,5 +1,6 @@
 package edu.unialfa.hackathon.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -16,5 +17,6 @@ public class TipoUsuario {
     private String descricao;
 
     @OneToMany(mappedBy = "tipoUsuario")
+    @JsonBackReference
     private List<Usuario> usuarios;
 }

@@ -1,5 +1,6 @@
 package edu.unialfa.hackathon.model;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -13,10 +14,12 @@ public class RespostaAluno {
 
     @ManyToOne
     @JoinColumn(name = "id_aluno", nullable = false)
+    @JsonManagedReference
     private Aluno aluno;
 
     @ManyToOne
     @JoinColumn(name = "id_prova", nullable = false)
+    @JsonManagedReference
     private Prova prova;
 
     private String numeroQuestao;

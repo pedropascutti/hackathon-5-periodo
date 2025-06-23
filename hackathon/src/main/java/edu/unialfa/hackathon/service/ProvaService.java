@@ -34,5 +34,8 @@ public class ProvaService {
         return repository.findByDisciplina_Professor_Usuario_Id(usuarioId);
     }
 
+    public List<Prova> listarPorDisciplina(Long idDisciplina) {
+        return repository.findByDisciplinaId(idDisciplina);
+    }
 }
 

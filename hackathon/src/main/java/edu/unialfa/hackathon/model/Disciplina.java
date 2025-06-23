@@ -1,5 +1,7 @@
 package edu.unialfa.hackathon.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -18,12 +20,15 @@ public class Disciplina {
 
     @ManyToOne
     @JoinColumn(name = "id_turma")
+    @JsonManagedReference
     private Turma turma;
 
     @ManyToOne
     @JoinColumn(name = "id_professor")
+    @JsonManagedReference
     private Professor professor;
 
     @OneToMany(mappedBy = "disciplina")
+    @JsonBackReference
     private List<Prova> provas = new ArrayList<>();
 }

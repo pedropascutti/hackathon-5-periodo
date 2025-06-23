@@ -1,5 +1,6 @@
 package edu.unialfa.hackathon.service;
 
+import edu.unialfa.hackathon.model.Disciplina;
 import edu.unialfa.hackathon.model.Turma;
 import edu.unialfa.hackathon.repository.TurmaRepository;
 import jakarta.transaction.Transactional;
@@ -30,4 +31,11 @@ public class TurmaService {
     public void deletarPorId(Long id) {
         turmaRepository.deleteById(id);
     }
+
+    public List<Disciplina> listarDisciplinasPorTurma(Long turmaId) {
+        return turmaRepository.findById(turmaId)
+                .orElseThrow(() -> new RuntimeException("Turma não encontrada"))
+                .getDisciplinas();
+    }
+
 }
