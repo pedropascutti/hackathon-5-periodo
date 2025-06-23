@@ -13,4 +13,6 @@ public interface QuestaoRepository extends JpaRepository<Questao, Long> {
     List<Questao> findByProva(Prova prova);
 
     Optional<Questao> findByProvaIdAndNumero(Long provaId, String numero);
+
+    List<Questao> findByProvaId(Long provaId);
 }

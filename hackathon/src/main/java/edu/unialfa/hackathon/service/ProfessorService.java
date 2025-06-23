@@ -1,6 +1,7 @@
 package edu.unialfa.hackathon.service;
 
 import edu.unialfa.hackathon.model.Professor;
+import edu.unialfa.hackathon.model.Usuario;
 import edu.unialfa.hackathon.repository.ProfessorRepository;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
@@ -37,6 +38,11 @@ public class ProfessorService {
     public void deletarPorUsuarioId(Long usuarioId) {
         repository.findByUsuarioId(usuarioId)
                 .ifPresent(repository::delete);
+    }
+
+    public Professor buscarPorUsuario(Usuario usuario) {
+        return repository.findByUsuario(usuario)
+                .orElseThrow(() -> new RuntimeException("Professor não encontrado para o usuário logado"));
     }
 
 }
