@@ -1,5 +1,6 @@
 package edu.unialfa.hackathon.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -17,8 +18,10 @@ public class Turma {
     private String nome;
 
     @OneToMany(mappedBy = "turma")
+    @JsonBackReference
     private List<Disciplina> disciplinas = new ArrayList<>();
 
     @OneToMany(mappedBy = "turma")
+    @JsonBackReference
     private List<Aluno> alunos = new ArrayList<>();
 }

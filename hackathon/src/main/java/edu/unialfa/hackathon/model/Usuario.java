@@ -1,5 +1,6 @@
 package edu.unialfa.hackathon.model;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.ToString;
@@ -23,6 +24,7 @@ public class Usuario implements UserDetails {
     @ManyToOne
     @JoinColumn(name = "id_tipo_usuario")
     @ToString.Exclude
+    @JsonManagedReference
     private TipoUsuario tipoUsuario;
 
     private String nome;
